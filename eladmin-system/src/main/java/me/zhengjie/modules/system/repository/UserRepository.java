@@ -45,6 +45,13 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     User findByEmail(String email);
 
     /**
+     * 根据手机号查询
+     * @param phone 手机号
+     * @return /
+     */
+    User findByPhone(String phone);
+
+    /**
      * 修改密码
      * @param username 用户名
      * @param pass 密码
@@ -74,12 +81,12 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     /**
      * 根据角色中的部门查询
-     * @param id /
+     * @param deptId /
      * @return /
      */
     @Query(value = "SELECT u.* FROM sys_user u, sys_users_roles r, sys_roles_depts d WHERE " +
-            "u.user_id = r.user_id AND r.role_id = d.role_id AND r.role_id = ?1 group by u.user_id", nativeQuery = true)
-    List<User> findByDeptRoleId(Long id);
+            "u.user_id = r.user_id AND r.role_id = d.role_id AND d.dept_id = ?1 group by u.user_id", nativeQuery = true)
+    List<User> findByRoleDeptId(Long deptId);
 
     /**
      * 根据菜单查询

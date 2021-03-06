@@ -13,49 +13,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package me.zhengjie.modules.security.config.bean;
-
-import lombok.Data;
+package me.zhengjie.utils;
 
 /**
- * 登录验证码配置信息
- *
- * @author liaojinlong
- * @date 2020/6/10 18:53
+ * @author: liaojinlong
+ * @date: 2020/6/11 15:49
+ * @apiNote: 关于缓存的Key集合
  */
-@Data
-public class LoginCode {
+public interface CacheKey {
 
     /**
-     * 验证码配置
+     * 用户
      */
-    private LoginCodeEnum codeType;
+    String USER_ID = "user::id:";
     /**
-     * 验证码有效期 分钟
+     * 数据
      */
-    private Long expiration = 2L;
+    String DATA_USER = "data::user:";
     /**
-     * 验证码内容长度
+     * 菜单
      */
-    private int length = 2;
+    String MENU_ID = "menu::id:";
+    String MENU_USER = "menu::user:";
     /**
-     * 验证码宽度
+     * 角色授权
      */
-    private int width = 111;
+    String ROLE_AUTH = "role::auth:";
     /**
-     * 验证码高度
+     * 角色信息
      */
-    private int height = 36;
+    String ROLE_ID = "role::id:";
     /**
-     * 验证码字体
+     * 部门
      */
-    private String fontName;
+    String DEPT_ID = "dept::id:";
     /**
-     * 字体大小
+     * 岗位
      */
-    private int fontSize = 25;
-
-    public LoginCodeEnum getCodeType() {
-        return codeType;
-    }
+    String JOB_ID = "job::id:";
+    /**
+     * 数据字典
+     */
+    String DICT_NAME = "dict::name:";
 }

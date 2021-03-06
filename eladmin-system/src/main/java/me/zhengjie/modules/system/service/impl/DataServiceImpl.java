@@ -65,7 +65,7 @@ public class DataServiceImpl implements DataService {
                     deptIds.addAll(getCustomize(deptIds, role));
                     break;
                 default:
-                    break;
+                    return new ArrayList<>(deptIds);
             }
         }
         return new ArrayList<>(deptIds);
@@ -83,7 +83,7 @@ public class DataServiceImpl implements DataService {
             deptIds.add(dept.getId());
             List<Dept> deptChildren = deptService.findByPid(dept.getId());
             if (deptChildren != null && deptChildren.size() != 0) {
-                deptIds.addAll(deptService.getDeptChildren(dept.getId(), deptChildren));
+                deptIds.addAll(deptService.getDeptChildren(deptChildren));
             }
         }
         return deptIds;

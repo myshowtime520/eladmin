@@ -20,6 +20,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.exception.BadRequestException;
+import me.zhengjie.utils.enums.DataScopeEnum;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -40,16 +41,8 @@ public class SecurityUtils {
      * @return UserDetails
      */
     public static UserDetails getCurrentUser() {
-        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) {
-            throw new BadRequestException(HttpStatus.UNAUTHORIZED, "当前登录状态过期");
-        }
-        if (authentication.getPrincipal() instanceof UserDetails) {
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            UserDetailsService userDetailsService = SpringContextHolder.getBean(UserDetailsService.class);
-            return userDetailsService.loadUserByUsername(userDetails.getUsername());
-        }
-        throw new BadRequestException(HttpStatus.UNAUTHORIZED, "找不到当前登录的信息");
+        UserDetailsService userDetailsService = SpringContextHolder.getBean(UserDetailsService.class);
+        return userDetailsService.loadUserByUsername(getCurrentUsername());
     }
 
     /**
@@ -62,8 +55,11 @@ public class SecurityUtils {
         if (authentication == null) {
             throw new BadRequestException(HttpStatus.UNAUTHORIZED, "当前登录状态过期");
         }
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return userDetails.getUsername();
+        if (authentication.getPrincipal() instanceof UserDetails) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            return userDetails.getUsername();
+        }
+        throw new BadRequestException(HttpStatus.UNAUTHORIZED, "找不到当前登录的信息");
     }
 
     /**
@@ -83,5 +79,17 @@ public class SecurityUtils {
         UserDetails userDetails = getCurrentUser();
         JSONArray array = JSONUtil.parseArray(new JSONObject(userDetails).get("dataScopes"));
         return JSONUtil.toList(array,Long.class);
+    }
+
+    /**
+     * 获取数据权限级别
+     * @return 级别
+     */
+    public static String getDataScopeType() {
+        List<Long> dataScopes = getCurrentUserDataScope();
+        if(dataScopes.size() != 0){
+            return "";
+        }
+        return DataScopeEnum.ALL.getValue();
     }
 }

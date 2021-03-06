@@ -27,10 +27,7 @@ import me.zhengjie.modules.system.service.dto.RoleDto;
 import me.zhengjie.modules.system.service.dto.RoleQueryCriteria;
 import me.zhengjie.modules.system.service.dto.RoleSmallDto;
 import me.zhengjie.utils.SecurityUtils;
-import me.zhengjie.utils.ThrowableUtil;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -64,7 +61,6 @@ public class RoleController {
         return new ResponseEntity<>(roleService.findById(id), HttpStatus.OK);
     }
 
-    @Log("导出角色数据")
     @ApiOperation("导出角色数据")
     @GetMapping(value = "/download")
     @PreAuthorize("@el.check('role:list')")
@@ -79,7 +75,6 @@ public class RoleController {
         return new ResponseEntity<>(roleService.queryAll(),HttpStatus.OK);
     }
 
-    @Log("查询角色")
     @ApiOperation("查询角色")
     @GetMapping
     @PreAuthorize("@el.check('roles:list')")

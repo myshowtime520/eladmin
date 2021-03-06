@@ -15,17 +15,22 @@
  */
 package me.zhengjie.modules.security.config.bean;
 
-
 import com.wf.captcha.*;
 import com.wf.captcha.base.Captcha;
+import lombok.Data;
 import me.zhengjie.exception.BadConfigurationException;
+import me.zhengjie.utils.StringUtils;
+
+import java.awt.*;
 import java.util.Objects;
 
 /**
  * 配置文件读取
+ *
  * @author liaojinlong
  * @date loginCode.length0loginCode.length0/6/10 17:loginCode.length6
  */
+@Data
 public class LoginProperties {
 
     /**
@@ -35,20 +40,17 @@ public class LoginProperties {
 
     private LoginCode loginCode;
 
+    /**
+     * 用户登录信息缓存
+     */
+    private boolean cacheEnable;
+
     public boolean isSingleLogin() {
         return singleLogin;
     }
 
-    public void setSingleLogin(boolean singleLogin) {
-        this.singleLogin = singleLogin;
-    }
-
-    public LoginCode getLoginCode() {
-        return loginCode;
-    }
-
-    public void setLoginCode(LoginCode loginCode) {
-        this.loginCode = loginCode;
+    public boolean isCacheEnable() {
+        return cacheEnable;
     }
 
     /**
@@ -78,7 +80,7 @@ public class LoginProperties {
             switch (loginCode.getCodeType()) {
                 case arithmetic:
                     // 算术类型 https://gitee.com/whvse/EasyCaptcha
-                    captcha = new ArithmeticCaptcha(loginCode.getWidth(), loginCode.getHeight());
+                    captcha = new FixedArithmeticCaptcha(loginCode.getWidth(), loginCode.getHeight());
                     // 几位数运算，默认是两位
                     captcha.setLen(loginCode.getLength());
                     break;
@@ -99,9 +101,35 @@ public class LoginProperties {
                     captcha.setLen(loginCode.getLength());
                     break;
                 default:
-                    throw new BadConfigurationException("验证码配置信息错误！！！正确配置查看 me.zhengjie.modules.security.config.bean.LoginCodeEnum ");
+                    throw new BadConfigurationException("验证码配置信息错误！正确配置查看 LoginCodeEnum ");
             }
         }
+        if(StringUtils.isNotBlank(loginCode.getFontName())){
+            captcha.setFont(new Font(loginCode.getFontName(), Font.PLAIN, loginCode.getFontSize()));
+        }
         return captcha;
+    }
+
+    static class FixedArithmeticCaptcha extends ArithmeticCaptcha {
+        public FixedArithmeticCaptcha(int width, int height) {
+            super(width, height);
+        }
+
+        @Override
+        protected char[] alphas() {
+            // 生成随机数字和运算符
+            int n1 = num(1, 10), n2 = num(1, 10);
+            int opt = num(3);
+
+            // 计算结果
+            int res = new int[]{n1 + n2, n1 - n2, n1 * n2}[opt];
+            // 转换为字符运算符
+            char optChar = "+-x".charAt(opt);
+
+            this.setArithmeticString(String.format("%s%c%s=?", n1, optChar, n2));
+            this.chars = String.valueOf(res);
+
+            return chars.toCharArray();
+        }
     }
 }

@@ -28,14 +28,15 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class ConfigBeanConfiguration {
+
     @Bean
-    @ConfigurationProperties(prefix = "login", ignoreUnknownFields = true)
+    @ConfigurationProperties(prefix = "login")
     public LoginProperties loginProperties() {
         return new LoginProperties();
     }
 
     @Bean
-    @ConfigurationProperties(prefix = "jwt", ignoreUnknownFields = true)
+    @ConfigurationProperties(prefix = "jwt")
     public SecurityProperties securityProperties() {
         return new SecurityProperties();
     }

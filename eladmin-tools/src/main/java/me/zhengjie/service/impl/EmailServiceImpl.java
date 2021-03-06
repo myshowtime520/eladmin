@@ -43,7 +43,7 @@ public class EmailServiceImpl implements EmailService {
     private final EmailRepository emailRepository;
 
     @Override
-    @CachePut(key = "'id:1'")
+    @CachePut(key = "'config'")
     @Transactional(rollbackFor = Exception.class)
     public EmailConfig config(EmailConfig emailConfig, EmailConfig old) throws Exception {
         emailConfig.setId(1L);
@@ -55,7 +55,7 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    @Cacheable(key = "'id:1'")
+    @Cacheable(key = "'config'")
     public EmailConfig find() {
         Optional<EmailConfig> emailConfig = emailRepository.findById(1L);
         return emailConfig.orElseGet(EmailConfig::new);
@@ -64,12 +64,14 @@ public class EmailServiceImpl implements EmailService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void send(EmailVo emailVo, EmailConfig emailConfig){
-        if(emailConfig == null){
+        if(emailConfig.getId() == null){
             throw new BadRequestException("请先配置，再操作");
         }
         // 封装
         MailAccount account = new MailAccount();
-        account.setUser(emailConfig.getUser());
+        // 设置用户
+        String user = emailConfig.getFromUser().split("@")[0];
+        account.setUser(user);
         account.setHost(emailConfig.getHost());
         account.setPort(Integer.parseInt(emailConfig.getPort()));
         account.setAuth(true);

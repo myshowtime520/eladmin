@@ -21,6 +21,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.annotation.Log;
 import me.zhengjie.config.RsaProperties;
+import me.zhengjie.modules.system.domain.Dept;
 import me.zhengjie.modules.system.service.DataService;
 import me.zhengjie.modules.system.domain.User;
 import me.zhengjie.exception.BadRequestException;
@@ -66,7 +67,6 @@ public class UserController {
     private final RoleService roleService;
     private final VerifyService verificationCodeService;
 
-    @Log("导出用户数据")
     @ApiOperation("导出用户数据")
     @GetMapping(value = "/download")
     @PreAuthorize("@el.check('user:list')")
@@ -74,15 +74,16 @@ public class UserController {
         userService.download(userService.queryAll(criteria), response);
     }
 
-    @Log("查询用户")
     @ApiOperation("查询用户")
     @GetMapping
     @PreAuthorize("@el.check('user:list')")
     public ResponseEntity<Object> query(UserQueryCriteria criteria, Pageable pageable){
         if (!ObjectUtils.isEmpty(criteria.getDeptId())) {
             criteria.getDeptIds().add(criteria.getDeptId());
-            criteria.getDeptIds().addAll(deptService.getDeptChildren(criteria.getDeptId(),
-                    deptService.findByPid(criteria.getDeptId())));
+            // 先查找是否存在子节点
+            List<Dept> data = deptService.findByPid(criteria.getDeptId());
+            // 然后把子节点的ID都加入到集合中
+            criteria.getDeptIds().addAll(deptService.getDeptChildren(data));
         }
         // 数据权限
         List<Long> dataScopes = dataService.getDeptIds(userService.findByName(SecurityUtils.getCurrentUsername()));
@@ -117,7 +118,7 @@ public class UserController {
     @ApiOperation("修改用户")
     @PutMapping
     @PreAuthorize("@el.check('user:edit')")
-    public ResponseEntity<Object> update(@Validated(User.Update.class) @RequestBody User resources){
+    public ResponseEntity<Object> update(@Validated(User.Update.class) @RequestBody User resources) throws Exception {
         checkLevel(resources);
         userService.update(resources);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);

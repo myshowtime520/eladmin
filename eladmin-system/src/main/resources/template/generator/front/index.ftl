@@ -17,16 +17,11 @@
   <#if betweens??>
     <#list betweens as column>
       <#if column.queryType = 'BetWeen'>
-        <el-date-picker
+        <date-range-picker
           v-model="query.${column.changeColumnName}"
-          :default-time="['00:00:00','23:59:59']"
-          type="daterange"
-          range-separator=":"
-          size="small"
-          class="date-item"
-          value-format="yyyy-MM-dd HH:mm:ss"
           start-placeholder="${column.changeColumnName}Start"
-          end-placeholder="${column.changeColumnName}End"
+          end-placeholder="${column.changeColumnName}Start"
+          class="date-item"
         />
       </#if>
     </#list>
@@ -75,7 +70,7 @@
         </el-form>
         <div slot="footer" class="dialog-footer">
           <el-button type="text" @click="crud.cancelCU">取消</el-button>
-          <el-button :loading="crud.cu === 2" type="primary" @click="crud.submitCU">确认</el-button>
+          <el-button :loading="crud.status.cu === 2" type="primary" @click="crud.submitCU">确认</el-button>
         </div>
       </el-dialog>
       <!--表格渲染-->
@@ -90,19 +85,13 @@
             {{ dict.label.${column.dictName}[scope.row.${column.changeColumnName}] }}
           </template>
         </el-table-column>
-          <#elseif column.columnType != 'Timestamp'>
-        <el-table-column prop="${column.changeColumnName}" label="<#if column.remark != ''>${column.remark}<#else>${column.changeColumnName}</#if>" />
                 <#else>
-        <el-table-column prop="${column.changeColumnName}" label="<#if column.remark != ''>${column.remark}<#else>${column.changeColumnName}</#if>">
-          <template slot-scope="scope">
-            <span>{{ parseTime(scope.row.${column.changeColumnName}) }}</span>
-          </template>
-        </el-table-column>
+        <el-table-column prop="${column.changeColumnName}" label="<#if column.remark != ''>${column.remark}<#else>${column.changeColumnName}</#if>" />
                 </#if>
             </#if>
             </#list>
         </#if>
-        <el-table-column v-permission="['admin','${changeClassName}:edit','${changeClassName}:del']" label="操作" width="150px" align="center">
+        <el-table-column v-if="checkPer(['admin','${changeClassName}:edit','${changeClassName}:del'])" label="操作" width="150px" align="center">
           <template slot-scope="scope">
             <udOperation
               :data="scope.row"
@@ -134,7 +123,7 @@ export default {
   dicts: [<#if hasDict??><#list dicts as dict>'${dict}'<#if dict_has_next>, </#if></#list></#if>],
   </#if>
   cruds() {
-    return CRUD({ title: '${apiAlias}', url: 'api/${changeClassName}', sort: '${pkChangeColName},desc', crudMethod: { ...crud${className} }})
+    return CRUD({ title: '${apiAlias}', url: 'api/${changeClassName}', idField: '${pkChangeColName}', sort: '${pkChangeColName},desc', crudMethod: { ...crud${className} }})
   },
   data() {
     return {

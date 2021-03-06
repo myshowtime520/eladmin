@@ -15,8 +15,8 @@
  */
 package me.zhengjie.modules.system.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.modules.system.domain.Menu;
 import me.zhengjie.modules.system.domain.Role;
@@ -61,7 +61,7 @@ public class MenuServiceImpl implements MenuService {
 
     @Override
     public List<MenuDto> queryAll(MenuQueryCriteria criteria, Boolean isQuery) throws Exception {
-        Sort sort = new Sort(Sort.Direction.ASC, "menuSort");
+        Sort sort = Sort.by(Sort.Direction.ASC, "menuSort");
         if(isQuery){
             criteria.setPidIsNull(true);
             List<Field> fields = QueryHelp.getAllFields(criteria.getClass(), new ArrayList<>());
@@ -128,7 +128,6 @@ public class MenuServiceImpl implements MenuService {
         resources.setSubCount(0);
         // 更新父节点菜单数目
         updateSubCnt(resources.getPid());
-        redisUtils.del("menu::pid:" + (resources.getPid() == null ? 0 : resources.getPid()));
     }
 
     @Override
@@ -183,17 +182,16 @@ public class MenuServiceImpl implements MenuService {
         updateSubCnt(oldPid);
         updateSubCnt(newPid);
         // 清理缓存
-        delCaches(resources.getId(), oldPid, newPid);
+        delCaches(resources.getId());
     }
 
     @Override
-    public Set<Menu> getDeleteMenus(List<Menu> menuList, Set<Menu> menuSet) {
-        // 递归找出待删除的菜单
-        for (Menu menu1 : menuList) {
-            menuSet.add(menu1);
-            List<Menu> menus = menuRepository.findByPid(menu1.getId());
+    public Set<Menu> getChildMenus(List<Menu> menuList, Set<Menu> menuSet) {
+        for (Menu menu : menuList) {
+            menuSet.add(menu);
+            List<Menu> menus = menuRepository.findByPid(menu.getId());
             if(menus!=null && menus.size()!=0){
-                getDeleteMenus(menus, menuSet);
+                getChildMenus(menus, menuSet);
             }
         }
         return menuSet;
@@ -204,7 +202,7 @@ public class MenuServiceImpl implements MenuService {
     public void delete(Set<Menu> menuSet) {
         for (Menu menu : menuSet) {
             // 清理缓存
-            delCaches(menu.getId(), menu.getPid(), null);
+            delCaches(menu.getId());
             roleService.untiedMenu(menu.getId());
             menuRepository.deleteById(menu.getId());
             updateSubCnt(menu.getPid());
@@ -212,7 +210,6 @@ public class MenuServiceImpl implements MenuService {
     }
 
     @Override
-    @Cacheable(key = "'pid:' + #p0")
     public List<MenuDto> getMenus(Long pid) {
         List<Menu> menus;
         if(pid != null && !pid.equals(0L)){
@@ -271,13 +268,16 @@ public class MenuServiceImpl implements MenuService {
                         // 如果不是外链
                         if(!menuDTO.getIFrame()){
                             if(menuDTO.getPid() == null){
-                                menuVo.setComponent(StrUtil.isEmpty(menuDTO.getComponent())?"Layout":menuDTO.getComponent());
-                            }else if(!StrUtil.isEmpty(menuDTO.getComponent())){
+                                menuVo.setComponent(StringUtils.isEmpty(menuDTO.getComponent())?"Layout":menuDTO.getComponent());
+                                // 如果不是一级菜单，并且菜单类型为目录，则代表是多级菜单
+                            }else if(menuDTO.getType() == 0){
+                                menuVo.setComponent(StringUtils.isEmpty(menuDTO.getComponent())?"ParentView":menuDTO.getComponent());
+                            }else if(StringUtils.isNoneBlank(menuDTO.getComponent())){
                                 menuVo.setComponent(menuDTO.getComponent());
                             }
                         }
                         menuVo.setMeta(new MenuMetaVo(menuDTO.getTitle(),menuDTO.getIcon(),!menuDTO.getCache()));
-                        if(menuDtoList !=null && menuDtoList.size()!=0){
+                        if(CollectionUtil.isNotEmpty(menuDtoList)){
                             menuVo.setAlwaysShow(true);
                             menuVo.setRedirect("noredirect");
                             menuVo.setChildren(buildMenus(menuDtoList));
@@ -341,20 +341,15 @@ public class MenuServiceImpl implements MenuService {
     /**
      * 清理缓存
      * @param id 菜单ID
-     * @param oldPid 旧的菜单父级ID
-     * @param newPid 新的菜单父级ID
      */
-    public void delCaches(Long id, Long oldPid, Long newPid){
+    public void delCaches(Long id){
         List<User> users = userRepository.findByMenuId(id);
-        redisUtils.del("menu::id:" +id);
-        redisUtils.delByKeys("menu::user:",users.stream().map(User::getId).collect(Collectors.toSet()));
-        redisUtils.del("menu::pid:" + (oldPid == null ? 0 : oldPid));
-        redisUtils.del("menu::pid:" + (newPid == null ? 0 : newPid));
+        redisUtils.del(CacheKey.MENU_ID + id);
+        redisUtils.delByKeys(CacheKey.MENU_USER, users.stream().map(User::getId).collect(Collectors.toSet()));
         // 清除 Role 缓存
         List<Role> roles = roleService.findInMenuId(new ArrayList<Long>(){{
             add(id);
-            add(newPid == null ? 0 : newPid);
         }});
-        redisUtils.delByKeys("role::id:",roles.stream().map(Role::getId).collect(Collectors.toSet()));
+        redisUtils.delByKeys(CacheKey.ROLE_ID, roles.stream().map(Role::getId).collect(Collectors.toSet()));
     }
 }
